@@ -1,6 +1,6 @@
 <?php
 
-require_once '../bb/db.php';
+require_once 'db.php';
 
 class onlineusers {
 	private $db;
