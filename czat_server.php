@@ -45,7 +45,6 @@ class controller extends core {
         $m = $this->inputFilter('m');
         $c = $this->inputFilter('c');
         if (strlen($n) && strlen($n) < 60 && strlen($m) && strlen($m) < 200 && strlen($c) == 6) {
-            // INSERT INTO czat_messages (nick, color, message, hash) VALUES ('stefan', 'ffffff', 'o jeeee', '123')
             $this->notSoFast();
             $stmt = $this->db->prepare("INSERT INTO $this->czat_m (nick, color, message, hash) VALUES (?, ?, ?, '$this->user')");
             $stmt->bindParam(1, $n, PDO::PARAM_STR, 60);
@@ -105,36 +104,51 @@ class server extends core {
     }
 
     private function messageEvent() {
-        $pointer = $this->getMyLastPost();
-        if ($pointer == NULL) {
-            $this->saveMyPresence();
-            $this->helloMessage();
-            $this->saveMyPostId(0);
+        $lastPostId = $this->getMyLastPost();
+        if (empty($lastPostId)) {
+            $this->iAmNew();
         } else {
-            $obj = $this->db->query("SELECT id, nick, color, message, DATE_FORMAT(time, '%H:%i:%s %d/%m/%Y') time, hash FROM $this->czat_m WHERE id > $pointer ORDER BY id ASC LIMIT 1")->fetch(PDO::FETCH_OBJ);
-            if (!empty($obj)) {
+            $newPosts = $this->db->query("SELECT id, nick, color, message, DATE_FORMAT(time, '%H:%i:%s %d/%m/%Y') time, hash FROM $this->czat_m WHERE id > $lastPostId ORDER BY id ASC LIMIT 1")->fetch(PDO::FETCH_OBJ);
+            if (!empty($newPosts)) {
                 $this->speedUp();
-                $this->printMessage($obj);
-                $this->saveMyPostId($obj->id);
+                $this->printMessage($newPosts);
+                $this->saveMyPostId($newPosts->id);
             } else {
                 $this->slowDown();
-                $this->justNothing($pointer);
+                $this->justNothing($lastPostId);
             }
         }
     }
 
+    private function iAmNew() {
+        $this->saveMyPresence();
+        $this->helloMessage();
+        $this->saveMyPostId(0);
+    }
+
+    private function query($sql) {
+        $result = $this->db->query($sql);
+        if (!$result instanceof PDOStatement) {
+            return FALSE;
+        }
+        return $result->fetch(PDO::FETCH_OBJ);
+    }
+
     private function saveMyPostId($postId) {
-        $this->db->query("UPDATE $this->czat_u SET lastpost = $postId WHERE hash = '$this->user'");
+        $sql = "UPDATE $this->czat_u SET lastpost = $postId WHERE hash = '$this->user'";
+        $this->db->query($sql);
     }
 
     private function usersEvent() {
         $str = '';
-        $users = $this->db->query("SELECT id, hash FROM $this->czat_u WHERE TIMESTAMPDIFF(SECOND, lastcheckin, NOW()) < 6")->fetchAll(PDO::FETCH_OBJ);
+        $sql = "SELECT id, hash FROM $this->czat_u WHERE TIMESTAMPDIFF(SECOND, lastcheckin, NOW()) < 6";
+        $users = $this->query($sql);
         if (empty($users)) {
             return;
         }
         foreach ($users as $k => $v) {
-            $nick = $this->db->query("SELECT nick, color FROM $this->czat_m WHERE hash = '$v->hash' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_OBJ);
+            $sql = "SELECT nick, color FROM $this->czat_m WHERE hash = '$v->hash' ORDER BY id DESC LIMIT 1";
+            $nick = $this->db->query($sql)->fetch(PDO::FETCH_OBJ);
             if (!empty($nick)) {
                 $str .= '"' . $nick->nick . '":"' . $nick->color . '",';
             } else {
@@ -146,22 +160,31 @@ class server extends core {
     }
 
     private function checkIn() {
-        $this->db->query("UPDATE $this->czat_u SET lastcheckin = NOW() WHERE hash = '$this->user'");
+        $sql = "UPDATE $this->czat_u SET lastcheckin = NOW() WHERE hash = '$this->user'";
+        $this->db->query($sql);
     }
 
     private function getMyLastPost() { // !! not so safe? !!
-        return $this->db->query("SELECT lastpost FROM $this->czat_u WHERE hash = '$this->user'")->fetch(PDO::FETCH_OBJ)->lastpost;
+        $sql = "SELECT lastpost FROM $this->czat_u WHERE hash = '$this->user'";
+        $result = $this->db->query($sql);
+        if (empty($result)) {
+            return false;
+        }
+        return $result->fetch(PDO::FETCH_OBJ)->lastpost;
     }
 
     private function saveMyPresence() {
-        $this->db->query("INSERT INTO $this->czat_u (hash) VALUES ('$this->user')");
+        $sql = "INSERT INTO $this->czat_u (hash) VALUES ('$this->user')";
+        $this->db->query($sql);
     }
 
     private function clearGarbage() {
         $time_m = 360;
         $time_u = 30;
+        //
         //dev mode:
-        //$time_m = $time_u = 10;
+        $time_m = $time_u = 10;
+        //
         $this->db->query("DELETE FROM $this->czat_m WHERE TIMESTAMPDIFF(SECOND, time, NOW()) > $time_m");
         $this->db->query("DELETE FROM $this->czat_u WHERE TIMESTAMPDIFF(SECOND, lastcheckin, NOW())> $time_u");
     }
