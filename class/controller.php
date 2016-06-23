@@ -7,14 +7,23 @@ class controller extends core {
         $this->redirect();
     }
 
-    private function inputFilter($variable) {
-        return filter_input(INPUT_POST, "$variable", FILTER_SANITIZE_STRING);
+    private function redirect() {
+        $this->handleNewMessage();
+        $this->handleNewUser();
     }
 
-    private function redirect() {
-        $n = $this->inputFilter('n');
-        $m = $this->inputFilter('m');
-        $c = $this->inputFilter('c');
+    private function notSoFast() {
+        $obj = $this->db->query("SELECT TIMESTAMPDIFF(SECOND, time, NOW()) diff FROM $this->czat_m WHERE hash = '$this->user' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_OBJ);
+        if (!empty($obj) && intval($obj->diff) < 1) {
+            echo 'nop';
+            exit;
+        }
+    }
+
+    public function handleNewMessage() {
+        $n = self::inputFilter('n');
+        $m = self::inputFilter('m');
+        $c = self::inputFilter('c');
         if (strlen($n) && strlen($n) < 60 && strlen($m) && strlen($m) < 200 && strlen($c) == 6) {
             $this->notSoFast();
             $stmt = $this->db->prepare("INSERT INTO $this->czat_m (nick, color, message, hash) VALUES (?, ?, ?, '$this->user')");
@@ -24,18 +33,12 @@ class controller extends core {
             $stmt->execute();
             exit;
         }
-
-        $iam = $this->inputFilter('iam');
-        if (!empty($iam)) {
-            echo $this->getHash($this->user);
-            exit;
-        }
     }
 
-    private function notSoFast() {
-        $obj = $this->db->query("SELECT TIMESTAMPDIFF(SECOND, time, NOW()) diff FROM $this->czat_m WHERE hash = '$this->user' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_OBJ);
-        if (!empty($obj) && intval($obj->diff) < 1) {
-            echo 'nop';
+    public function handleNewUser() {
+        $iam = self::inputFilter('iam');
+        if (!empty($iam)) {
+            echo $this->getHash($this->user);
             exit;
         }
     }

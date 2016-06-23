@@ -17,4 +17,8 @@ class core {
         return substr($hash, 0, 16);
     }
 
+    public function inputFilter($name) {
+        return filter_input(INPUT_POST, "$name", FILTER_SANITIZE_STRING);
+    }
+
 }

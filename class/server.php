@@ -2,6 +2,9 @@
 
 class server extends core {
 
+    private static $MAX_TIME_FOR_USER = 30;
+    private static $MAX_TIME_FOR_MESSAGE = 360;
+    
     public function __construct() {
         parent::__construct();
         $this->clearGarbage();
@@ -34,10 +37,11 @@ class server extends core {
 
     private function messageEvent() {
         $lastPostId = $this->getMyLastPost();
-        if (empty($lastPostId)) {
+        if ($lastPostId < 1) {
             $this->iAmNew();
         } else {
-            $newPosts = $this->db->query("SELECT id, nick, color, message, DATE_FORMAT(time, '%H:%i:%s %d/%m/%Y') time, hash FROM $this->czat_m WHERE id > $lastPostId ORDER BY id ASC LIMIT 1")->fetch(PDO::FETCH_OBJ);
+            $sql = "SELECT id, nick, color, message, DATE_FORMAT(time, '%H:%i:%s %d/%m/%Y') time, hash FROM $this->czat_m WHERE id > $lastPostId ORDER BY id ASC LIMIT 1";
+            $newPosts = $this->query();
             if (!empty($newPosts)) {
                 $this->speedUp();
                 $this->printMessage($newPosts);
@@ -77,7 +81,7 @@ class server extends core {
         }
         foreach ($users as $k => $v) {
             $sql = "SELECT nick, color FROM $this->czat_m WHERE hash = '$v->hash' ORDER BY id DESC LIMIT 1";
-            $nick = $this->db->query($sql)->fetch(PDO::FETCH_OBJ);
+            $nick = $this->query($sql);
             if (!empty($nick)) {
                 $str .= '"' . $nick->nick . '":"' . $nick->color . '",';
             } else {
@@ -93,11 +97,11 @@ class server extends core {
         $this->db->query($sql);
     }
 
-    private function getMyLastPost() { // !! not so safe? !!
+    private function getMyLastPost() {
         $sql = "SELECT lastpost FROM $this->czat_u WHERE hash = '$this->user'";
         $result = $this->db->query($sql);
         if (empty($result)) {
-            return false;
+            return 0;
         }
         return $result->fetch(PDO::FETCH_OBJ)->lastpost;
     }
@@ -108,14 +112,10 @@ class server extends core {
     }
 
     private function clearGarbage() {
-        $time_m = 360;
-        $time_u = 30;
-        //
-        //dev mode:
-        $time_m = $time_u = 10;
-        //
-        $this->db->query("DELETE FROM $this->czat_m WHERE TIMESTAMPDIFF(SECOND, time, NOW()) > $time_m");
-        $this->db->query("DELETE FROM $this->czat_u WHERE TIMESTAMPDIFF(SECOND, lastcheckin, NOW())> $time_u");
+        $sql = "DELETE FROM $this->czat_m WHERE TIMESTAMPDIFF(SECOND, time, NOW()) > " + self::$MAX_TIME_FOR_USER;
+        $this->db->query($sql);
+        $sql = "DELETE FROM $this->czat_u WHERE TIMESTAMPDIFF(SECOND, lastcheckin, NOW()) > " + self::$MAX_TIME_FOR_MESSAGE;
+        $this->db->query($sql);
     }
 
     private function finish() {
