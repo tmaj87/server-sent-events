@@ -1,23 +1,25 @@
 <!DOCTYPE html>
 <html lang="pl">
-<head>
-	<title>"Czat" by Tomasz Maj</title>
-	<meta charset="UTF-8">
-	<link href="czat_.css" rel="stylesheet" type="text/css"/>
-</head>
-<body>
-<div id="message_box"></div>
-<div id="users_box"></div>
-<div id="sound_box"></div>
-<form id="message_form" action="czat_server.php" method="post">
-	<input type="text" name="n" placeholder="nick" style="width: 140px">&nbsp;&nbsp;
-	<input type="text" name="m" placeholder="wiadomość" style="width: 300px">&nbsp;&nbsp;
-	<input type="submit" value="wyślij">
-	<input type="hidden" name="c">
-</form>
-<p style="float: right;">Program nie działa w IE, bo IE nie wspiera technologii.</p>
-<script src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
-<!--<script src="jquery.mobile-1.4.2.min.js" type="text/javascript"></script>-->
-<script src="czat_.88sdf.js"></script>
-</body>
+    <head>
+        <title>"Czat" by Tomasz Maj</title>
+        <meta charset="UTF-8">
+        <link href="czat_.css" rel="stylesheet" type="text/css"/>
+    </head>
+    <body>
+        <div id="message_box"></div>
+        <div id="users_box"></div>
+        <div id="sound_box"></div>
+        <form id="message_form" action="czat_server.php" method="post">
+            <input type="text" name="n" placeholder="nick" style="width: 140px">&nbsp;&nbsp;
+            <input type="text" name="m" placeholder="wiadomość" style="width: 300px">&nbsp;&nbsp;
+            <input type="submit" value="wyślij">
+            <input type="hidden" name="c">
+        </form>
+        <p style="float: right;">Program nie działa w IE, bo IE nie wspiera technologii.</p>
+        <script
+            src="https://code.jquery.com/jquery-3.0.0.min.js"
+            integrity="sha256-JmvOoLtYsmqlsWxa7mDSLMwa6dZ9rrIdtrrVYRnDRH0="
+        crossorigin="anonymous"></script>
+        <script src="czat_.js"></script>
+    </body>
 </html>

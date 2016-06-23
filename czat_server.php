@@ -38,9 +38,9 @@ class controller extends core {
         }
         
 	private function redirect() {
-		$n = inputFilter('n');
-		$m = inputFilter('m');
-		$c = inputFilter('c');
+		$n = $this->inputFilter('n');
+		$m = $this->inputFilter('m');
+		$c = $this->inputFilter('c');
 		if (strlen($n) && strlen($n) < 60 && strlen($m) && strlen($m) < 200 && strlen($c) == 6) {
 			// INSERT INTO czat_messages (nick, color, message, hash) VALUES ('stefan', 'ffffff', 'o jeeee', '123')
 			$this->notSoFast();
@@ -52,7 +52,7 @@ class controller extends core {
 			exit;
 		}
 				
-		$iam = filter_input(INPUT_POST, 'iam', FILTER_SANITIZE_NUMBER_INT);
+		$iam = $this->inputFilter('iam');
 		if (!empty($iam)) {
 			echo $this->getHash($this->user);
 			exit;
