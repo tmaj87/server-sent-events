@@ -4,7 +4,7 @@ class server extends core {
 
     private static $MAX_TIME_FOR_USER = 30;
     private static $MAX_TIME_FOR_MESSAGE = 360;
-    
+
     public function __construct() {
         parent::__construct();
         $this->clearGarbage();
@@ -20,17 +20,19 @@ class server extends core {
         header('Cache-Control: no-cache');
     }
 
-    private function helloMessage($pointer) {
-        echo 'id: ' . $pointer . PHP_EOL;
+    private function helloMessage($currentId) {
+        $this->saveMyPostId(1);
+        echo 'id: ' . $currentId . PHP_EOL;
         echo 'data: {"n":"tmaj","h":"admin","c":"5cb85c","m":"Witaj na Czacie, instrukcja:<br><i>Po lewej stronie znajduje się pole na <b>nicka</b> po prawej wpisz <b>wiadomość</b>,</i> miłej zabawy..!","t":"undefined"}' . PHP_EOL;
     }
 
-    private function justNothing($pointer) {
-        echo 'id: ' . $pointer . PHP_EOL;
+    private function zzzMessage($currentId) {
+        echo 'id: ' . $currentId . PHP_EOL;
         echo 'data: {"n":"tmaj","h":"admin","c":"5cb85c","m":"Zzz...","t":"undefined"}' . PHP_EOL;
     }
 
     private function printMessage($messageObj) {
+        $this->saveMyPostId($messageObj->id);
         echo 'id: ' . $messageObj->id . PHP_EOL;
         echo 'data: {"n":"' . $messageObj->nick . '","h":"' . $this->getHash($messageObj->hash) . '","c":"' . $messageObj->color . '","m":"' . $messageObj->message . '","t":"' . $messageObj->time . '"}' . PHP_EOL;
     }
@@ -38,25 +40,18 @@ class server extends core {
     private function messageEvent() {
         $lastPostId = $this->getMyLastPost();
         if ($lastPostId < 1) {
-            $this->iAmNew();
+            $this->helloMessage();
         } else {
             $sql = "SELECT id, nick, color, message, DATE_FORMAT(time, '%H:%i:%s %d/%m/%Y') time, hash FROM $this->czat_m WHERE id > $lastPostId ORDER BY id ASC LIMIT 1";
             $newPosts = $this->query();
             if (!empty($newPosts)) {
                 $this->speedUp();
                 $this->printMessage($newPosts);
-                $this->saveMyPostId($newPosts->id);
             } else {
                 $this->slowDown();
-                $this->justNothing($lastPostId);
+                $this->zzzMessage();
             }
         }
-    }
-
-    private function iAmNew() {
-        $this->saveMyPresence();
-        $this->helloMessage();
-        $this->saveMyPostId(0);
     }
 
     private function query($sql) {
@@ -72,7 +67,7 @@ class server extends core {
         $this->db->query($sql);
     }
 
-    private function usersEvent() {
+    private function usersEvent() { // Uncle Bob me
         $str = '';
         $sql = "SELECT id, hash FROM $this->czat_u WHERE TIMESTAMPDIFF(SECOND, lastcheckin, NOW()) < 6";
         $users = $this->query($sql);
@@ -93,8 +88,16 @@ class server extends core {
     }
 
     private function checkIn() {
+        if ($this->getUserId()) {
+            $this->saveMyPresence();
+        }
         $sql = "UPDATE $this->czat_u SET lastcheckin = NOW() WHERE hash = '$this->user'";
         $this->db->query($sql);
+    }
+
+    private function getUserId() {
+        $sql = "SELECT id FROM $this->czat_u WHERE hash = '$this->user'";
+        return $this->query($sql)->id;
     }
 
     private function getMyLastPost() {
@@ -106,7 +109,7 @@ class server extends core {
         return $result->fetch(PDO::FETCH_OBJ)->lastpost;
     }
 
-    private function saveMyPresence() {
+    private function saveMyPresence() { // redesign this one
         $sql = "INSERT INTO $this->czat_u (hash) VALUES ('$this->user')";
         $this->db->query($sql);
     }
