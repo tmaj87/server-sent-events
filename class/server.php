@@ -6,12 +6,11 @@ class server extends core {
     private static $MAX_TIME_FOR_MESSAGE = 360;
 
     public function __construct() {
-        parent::__construct();
         $this->clearGarbage();
         $this->addHeaders();
         $this->checkIn();
-        $this->messageEvent();
-        $this->usersEvent();
+        $this->handleMessages();
+        $this->printAllUsers();
         $this->finish();
     }
 
@@ -26,40 +25,30 @@ class server extends core {
         echo 'data: {"n":"tmaj","h":"admin","c":"5cb85c","m":"Witaj na Czacie, instrukcja:<br><i>Po lewej stronie znajduje się pole na <b>nicka</b> po prawej wpisz <b>wiadomość</b>,</i> miłej zabawy..!","t":"undefined"}' . PHP_EOL;
     }
 
-    private function zzzMessage($currentId) {
-        echo 'id: ' . $currentId . PHP_EOL;
-        echo 'data: {"n":"tmaj","h":"admin","c":"5cb85c","m":"Zzz...","t":"undefined"}' . PHP_EOL;
-    }
-
     private function printMessage($messageObj) {
         $this->saveMyPostId($messageObj->id);
         echo 'id: ' . $messageObj->id . PHP_EOL;
         echo 'data: {"n":"' . $messageObj->nick . '","h":"' . $this->getHash($messageObj->hash) . '","c":"' . $messageObj->color . '","m":"' . $messageObj->message . '","t":"' . $messageObj->time . '"}' . PHP_EOL;
     }
 
-    private function messageEvent() {
+    private function handleMessages() {
         $lastPostId = $this->getMyLastPost();
         if ($lastPostId < 1) {
             $this->helloMessage();
         } else {
-            $sql = "SELECT id, nick, color, message, DATE_FORMAT(time, '%H:%i:%s %d/%m/%Y') time, hash FROM $this->czat_m WHERE id > $lastPostId ORDER BY id ASC LIMIT 1";
-            $newPosts = $this->query();
-            if (!empty($newPosts)) {
-                $this->speedUp();
-                $this->printMessage($newPosts);
-            } else {
-                $this->slowDown();
-                $this->zzzMessage();
-            }
+            $this->checkForNews($lastPostId);
         }
     }
 
-    private function query($sql) {
-        $result = $this->db->query($sql);
-        if (!($result instanceof PDOStatement)) {
-            return FALSE;
+    public function checkForNews($id) {
+        $sql = "SELECT id, nick, color, message, DATE_FORMAT(time, '%H:%i:%s %d/%m/%Y') time, hash FROM $this->czat_m WHERE id > $id ORDER BY id ASC LIMIT 1";
+        $message = $this->db->query($sql);
+        if (!empty($message)) {
+            $this->speedUp();
+            $this->printMessage($message);
+        } else {
+            $this->slowDown();
         }
-        return $result->fetch(PDO::FETCH_OBJ);
     }
 
     private function saveMyPostId($postId) {
@@ -67,22 +56,24 @@ class server extends core {
         $this->db->query($sql);
     }
 
-    private function usersEvent() { // Uncle Bob me
+    private function printAllUsers() {
         $str = '';
         $sql = "SELECT id, hash FROM $this->czat_u WHERE TIMESTAMPDIFF(SECOND, lastcheckin, NOW()) < 6";
-        $users = $this->query($sql);
+        $users = $this->db->query($sql);
         if (empty($users)) {
             return;
         }
+        
         foreach ($users as $k => $v) {
             $sql = "SELECT nick, color FROM $this->czat_m WHERE hash = '$v->hash' ORDER BY id DESC LIMIT 1";
-            $nick = $this->query($sql);
+            $nick = $this->db->query($sql);
             if (!empty($nick)) {
                 $str .= '"' . $nick->nick . '":"' . $nick->color . '",';
             } else {
                 $str .= '"' . $this->getHash($v->hash) . '":"",';
             }
         }
+        
         echo PHP_EOL . 'event: users' . PHP_EOL;
         echo 'data: {' . substr($str, 0, -1) . '}' . PHP_EOL;
     }
@@ -97,19 +88,15 @@ class server extends core {
 
     private function getUserId() {
         $sql = "SELECT id FROM $this->czat_u WHERE hash = '$this->user'";
-        return $this->query($sql)->id;
+        return $this->db->query($sql)->id;
     }
 
     private function getMyLastPost() {
         $sql = "SELECT lastpost FROM $this->czat_u WHERE hash = '$this->user'";
-        $result = $this->db->query($sql);
-        if (empty($result)) {
-            return 0;
-        }
-        return $result->fetch(PDO::FETCH_OBJ)->lastpost;
+        return $this->db->query($sql)->lastpost;
     }
 
-    private function saveMyPresence() { // redesign this one
+    private function saveMyPresence() {
         $sql = "INSERT INTO $this->czat_u (hash) VALUES ('$this->user')";
         $this->db->query($sql);
     }

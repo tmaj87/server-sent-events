@@ -8,12 +8,7 @@
  *  - obsługa eventu zamknięcia (przez serwer) połączenia
  */
 
-require_once 'db.php';
-
-require_once 'class/core.php';
-require_once 'class/controller.php';
-require_once 'class/server.php';
-
+require_once 'header.php';
 
 $controller = new controller();
 $server = new server();

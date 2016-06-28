@@ -1,17 +1,25 @@
 <?php
 
-$dsn = 'mysql:dbname=czat;host=localhost';
-$user = 'root';
-$password = '';
+class database {
 
-try {
-    $dbh = new PDO($dsn, $user, $password, array(
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING,
-        PDO::ATTR_PERSISTENT => false // true for keeping connection alive
-    ));
-} catch (PDOException $e) {
-    print "Error!: " . $e->getMessage() . "<br/>";
-    die();
+    private $handle;
+    private $dsn = 'mysql:dbname=czat;host=localhost';
+    private $user = 'root';
+    private $password = '';
+
+    function __construct() {
+        try {
+            $this->handle = new PDO(self::$dsn, self::$user, self::$password);
+        } catch (PDOException $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
+        }
+    }
+
+    function query($sql) {
+        $result = $this->db->query($sql);
+        if (!($result instanceof PDOStatement)) {
+            trigger_error('could not query database for...', E_USER_ERROR);
+        }
+        return $result->fetch(PDO::FETCH_OBJ);
+    }
 }
-?>
-

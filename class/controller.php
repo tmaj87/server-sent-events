@@ -16,7 +16,6 @@ class controller extends core {
         $obj = $this->db->query("SELECT TIMESTAMPDIFF(SECOND, time, NOW()) diff FROM $this->czat_m WHERE hash = '$this->user' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_OBJ);
         if (!empty($obj) && intval($obj->diff) < 1) {
             echo 'nop';
-            exit;
         }
     }
 
@@ -31,7 +30,6 @@ class controller extends core {
             $stmt->bindParam(2, $c, PDO::PARAM_STR, 6);
             $stmt->bindParam(3, $m, PDO::PARAM_STR, 200);
             $stmt->execute();
-            exit;
         }
     }
 
@@ -39,7 +37,6 @@ class controller extends core {
         $iam = self::inputFilter('iam');
         if (!empty($iam)) {
             echo $this->getHash($this->user);
-            exit;
         }
     }
 

@@ -2,15 +2,12 @@
 
 class core {
 
-    protected $db;
     protected $user;
     protected $czat_u = 'czat_users';
     protected $czat_m = 'czat_messages';
     private $seed = '9Gt:t5u$gkkrG8Oar,xCfylhIGn7lxXs';
 
     public function __construct() {
-        global $dbh;
-        $this->db = $dbh;
         $this->user = hash('sha1', $_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT'] . $this->seed);
     }
 
