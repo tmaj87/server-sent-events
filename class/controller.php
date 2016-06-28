@@ -3,7 +3,6 @@
 class controller extends core {
 
     public function __construct() {
-        parent::__construct();
         $this->redirect();
     }
 

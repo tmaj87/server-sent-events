@@ -1,7 +1,5 @@
 <?php
 
-require_once 'db.php';
-
 set_error_handler('onError');
 
 function onError($level, $message, $file, $line, $context) {
